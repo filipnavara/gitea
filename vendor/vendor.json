@@ -1,0 +1,56 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "QKBW99hh+V2ffYtQ+We4Kk8zlLw=",
+			"path": "github.com/alcortesm/tgz",
+			"revision": "9c5fe88206d7765837fed3732a42ef88fc51f1a1",
+			"revisionTime": "2016-12-20T08:23:20Z"
+		},
+		{
+			"checksumSHA1": "jwoPNwN+mUiYFQPjQa/U3Kli7Ak=",
+			"path": "github.com/kr/pretty",
+			"revision": "73f6ac0b30a98e433b289500d779f50c1a6f0712",
+			"revisionTime": "2018-05-06T08:33:45Z"
+		},
+		{
+			"checksumSHA1": "x9dJv+jQhUFN6R6h4fzPjGLvQLg=",
+			"path": "github.com/kr/text",
+			"revision": "e2ffdb16a802fe2bb95e2e35ff34f0e53aeef34f",
+			"revisionTime": "2018-05-06T08:24:08Z"
+		},
+		{
+			"checksumSHA1": "iyL0/njjAaU0nmQGSgoNVDpdvpU=",
+			"path": "gopkg.in/check.v1",
+			"revision": "788fd78401277ebd861206a03c884797c6ec5541",
+			"revisionTime": "2018-06-28T17:31:08Z"
+		},
+		{
+			"checksumSHA1": "fF5pL98GwomDTBvK5qOh9qs18XM=",
+			"path": "gopkg.in/src-d/go-billy.v4/memfs",
+			"revision": "982626487c60a5252e7d0b695ca23fb0fa2fd670",
+			"revisionTime": "2018-09-19T10:02:40Z"
+		},
+		{
+			"checksumSHA1": "iG1VTZplMa/L+q/qNpdZb533Vp4=",
+			"path": "gopkg.in/src-d/go-billy.v4/test",
+			"revision": "982626487c60a5252e7d0b695ca23fb0fa2fd670",
+			"revisionTime": "2018-09-19T10:02:40Z"
+		},
+		{
+			"checksumSHA1": "r4i6EBg6yB/oudq8AYhzXLKNRSA=",
+			"path": "gopkg.in/src-d/go-git-fixtures.v3",
+			"revision": "49a975e8b44a25af2e567da5982bb709d574e61c",
+			"revisionTime": "2018-11-19T14:36:20Z"
+		},
+		{
+			"checksumSHA1": "q3lm3LFLJtQ8p1ukaLtr/PtVfoU=",
+			"origin": "github.com/filipnavara/go-git",
+			"path": "gopkg.in/src-d/go-git.v4",
+			"revision": "791aea319719ee757cb862e83ec43b25113de2c1",
+			"revisionTime": "2018-12-12T10:06:24Z"
+		}
+	],
+	"rootPath": "code.gitea.io/gitea"
+}
