@@ -23,7 +23,7 @@ func (tes Entries) GetCommitsInfo(commit *Commit, treePath string, cache LastCom
 		return nil, nil, err
 	}
 
-	revs, err := getLastCommitForPaths(c, treePath, entryPaths)
+	revs, err := getLastCommitForPaths(commit.repo.gogitRepo.CommitNodeIndex(), c, treePath, entryPaths)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -59,14 +59,14 @@ func (tes Entries) GetCommitsInfo(commit *Commit, treePath string, cache LastCom
 }
 
 type commitAndPaths struct {
-	commit *object.Commit
+	commit object.CommitNode
 	// Paths that are still on the branch represented by commit
 	paths []string
 	// Set of hashes for the paths
 	hashes map[string]plumbing.Hash
 }
 
-func getCommitTree(c *object.Commit, treePath string) (*object.Tree, error) {
+func getCommitTree(c object.CommitNode, treePath string) (*object.Tree, error) {
 	tree, err := c.Tree()
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func getFullPath(treePath, path string) string {
 	return path
 }
 
-func getFileHashes(c *object.Commit, treePath string, paths []string) (map[string]plumbing.Hash, error) {
+func getFileHashes(c object.CommitNode, treePath string, paths []string) (map[string]plumbing.Hash, error) {
 	tree, err := getCommitTree(c, treePath)
 	if err == object.ErrDirectoryNotFound {
 		// The whole tree didn't exist, so return empty map
@@ -118,17 +118,29 @@ func getFileHashes(c *object.Commit, treePath string, paths []string) (map[strin
 	return hashes, nil
 }
 
-func getLastCommitForPaths(c *object.Commit, treePath string, paths []string) (map[string]*object.Commit, error) {
+func canSkipCommit(index object.CommitNodeIndex, commit object.CommitNode, treePath string, paths []string) bool {
+	if bloom, err := index.BloomFilter(commit); err == nil {
+		for _, path := range paths {
+			if bloom.Test(getFullPath(treePath, path)) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+func getLastCommitForPaths(index object.CommitNodeIndex, c object.CommitNode, treePath string, paths []string) (map[string]*object.Commit, error) {
 	// We do a tree traversal with nodes sorted by commit time
 	seen := make(map[plumbing.Hash]bool)
 	heap := binaryheap.NewWith(func(a, b interface{}) int {
-		if a.(*commitAndPaths).commit.Committer.When.Before(b.(*commitAndPaths).commit.Committer.When) {
+		if a.(*commitAndPaths).commit.CommitTime().Before(b.(*commitAndPaths).commit.CommitTime()) {
 			return 1
 		}
 		return -1
 	})
 
-	result := make(map[string]*object.Commit)
+	resultNodes := make(map[string]object.CommitNode)
 	initialHashes, err := getFileHashes(c, treePath, paths)
 	if err != nil {
 		return nil, err
@@ -151,14 +163,21 @@ func getLastCommitForPaths(c *object.Commit, treePath string, paths []string) (m
 		seen[currentID] = true
 
 		// Load the parent commits for the one we are currently examining
-		numParents := current.commit.NumParents()
-		var parents []*object.Commit
+		numParents := index.NumParents(current.commit)
+		var parents []object.CommitNode
 		for i := 0; i < numParents; i++ {
-			parent, err := current.commit.Parent(i)
+			parent, err := index.ParentNode(current.commit, i)
 			if err != nil {
 				break
 			}
 			parents = append(parents, parent)
+		}
+
+		// Optimization: If there is only one parent and a bloom filter can tell us
+		// that none of our paths has changed then skip all the change checking
+		if numParents == 1 && canSkipCommit(index, current.commit, treePath, current.paths) {
+			heap.Push(&commitAndPaths{parents[0], current.paths, current.hashes})
+			continue
 		}
 
 		// Examine the current commit and set of interesting paths
@@ -188,15 +207,15 @@ func getLastCommitForPaths(c *object.Commit, treePath string, paths []string) (m
 				// The path didn't exist in any parent, so it must have been created by
 				// this commit. The results could already contain some newer change from
 				// different path, so don't override that.
-				if result[path] == nil {
-					result[path] = current.commit
+				if resultNodes[path] == nil {
+					resultNodes[path] = current.commit
 				}
 			case 1:
 				// The file is present on exactly one parent, so check if it was changed
 				// and save the revision if it did.
 				if pathChanged[i] {
-					if result[path] == nil {
-						result[path] = current.commit
+					if resultNodes[path] == nil {
+						resultNodes[path] = current.commit
 					}
 				} else {
 					remainingPaths = append(remainingPaths, path)
@@ -230,6 +249,16 @@ func getLastCommitForPaths(c *object.Commit, treePath string, paths []string) (m
 
 				heap.Push(&commitAndPaths{parent, remainingPathsForParent, parentHashes[j]})
 			}
+		}
+	}
+
+	// Post-processing
+	result := make(map[string]*object.Commit)
+	for path, commitNode := range resultNodes {
+		var err error
+		result[path], err = index.Commit(commitNode)
+		if err != nil {
+			return nil, err
 		}
 	}
 
