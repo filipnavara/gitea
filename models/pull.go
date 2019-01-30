@@ -481,6 +481,16 @@ func (pr *PullRequest) Merge(doer *User, baseGitRepo *git.Repository, mergeStyle
 
 		sig := doer.NewGitSig()
 		if _, stderr, err = process.GetManager().ExecDir(-1, tmpBasePath,
+			fmt.Sprintf("PullRequest.Merge (git config user.name): %s", tmpBasePath),
+			"git", "config", "user.name", sig.Name); err != nil {
+			return fmt.Errorf("git config [%s]: %v - %s", tmpBasePath, err, stderr)
+		}
+		if _, stderr, err = process.GetManager().ExecDir(-1, tmpBasePath,
+			fmt.Sprintf("PullRequest.Merge (git config user.email): %s", tmpBasePath),
+			"git", "config", "user.email", sig.Email); err != nil {
+			return fmt.Errorf("git config [%s]: %v - %s", tmpBasePath, err, stderr)
+		}
+		if _, stderr, err = process.GetManager().ExecDir(-1, tmpBasePath,
 			fmt.Sprintf("PullRequest.Merge (git merge): %s", tmpBasePath),
 			"git", "commit", fmt.Sprintf("--author='%s <%s>'", sig.Name, sig.Email),
 			"-m", message); err != nil {
@@ -540,6 +550,16 @@ func (pr *PullRequest) Merge(doer *User, baseGitRepo *git.Repository, mergeStyle
 		// Set custom message and author and create merge commit
 		sig := doer.NewGitSig()
 		if _, stderr, err = process.GetManager().ExecDir(-1, tmpBasePath,
+			fmt.Sprintf("PullRequest.Merge (git config user.name): %s", tmpBasePath),
+			"git", "config", "user.name", sig.Name); err != nil {
+			return fmt.Errorf("git config [%s]: %v - %s", tmpBasePath, err, stderr)
+		}
+		if _, stderr, err = process.GetManager().ExecDir(-1, tmpBasePath,
+			fmt.Sprintf("PullRequest.Merge (git config user.email): %s", tmpBasePath),
+			"git", "config", "user.email", sig.Email); err != nil {
+			return fmt.Errorf("git config [%s]: %v - %s", tmpBasePath, err, stderr)
+		}
+		if _, stderr, err = process.GetManager().ExecDir(-1, tmpBasePath,
 			fmt.Sprintf("PullRequest.Merge (git commit): %s", tmpBasePath),
 			"git", "commit", fmt.Sprintf("--author='%s <%s>'", sig.Name, sig.Email),
 			"-m", message); err != nil {
@@ -554,6 +574,16 @@ func (pr *PullRequest) Merge(doer *User, baseGitRepo *git.Repository, mergeStyle
 			return fmt.Errorf("git merge --squash [%s -> %s]: %s", headRepoPath, tmpBasePath, stderr)
 		}
 		sig := pr.Issue.Poster.NewGitSig()
+		if _, stderr, err = process.GetManager().ExecDir(-1, tmpBasePath,
+			fmt.Sprintf("PullRequest.Merge (git config user.name): %s", tmpBasePath),
+			"git", "config", "user.name", sig.Name); err != nil {
+			return fmt.Errorf("git config [%s]: %v - %s", tmpBasePath, err, stderr)
+		}
+		if _, stderr, err = process.GetManager().ExecDir(-1, tmpBasePath,
+			fmt.Sprintf("PullRequest.Merge (git config user.email): %s", tmpBasePath),
+			"git", "config", "user.email", sig.Email); err != nil {
+			return fmt.Errorf("git config [%s]: %v - %s", tmpBasePath, err, stderr)
+		}
 		if _, stderr, err = process.GetManager().ExecDir(-1, tmpBasePath,
 			fmt.Sprintf("PullRequest.Merge (git squash): %s", tmpBasePath),
 			"git", "commit", fmt.Sprintf("--author='%s <%s>'", sig.Name, sig.Email),
