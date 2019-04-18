@@ -16,7 +16,7 @@ func GetPayloadCommitVerification(commit *git.Commit) *gitea.PayloadCommitVerifi
 	commitVerification := models.ParseCommitWithSignature(commit)
 	if commit.Signature != nil {
 		verification.Signature = commit.Signature.Signature
-		verification.Payload = commit.Signature.Payload
+		verification.Payload = commit.Signature.GetPayload()
 	}
 	if verification.Reason != "" {
 		verification.Reason = commitVerification.Reason

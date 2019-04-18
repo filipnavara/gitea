@@ -18,6 +18,7 @@ import (
 	"code.gitea.io/gitea/modules/git"
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/modules/util"
+	"golang.org/x/crypto/openpgp/errors"
 
 	"github.com/go-xorm/xorm"
 	"github.com/keybase/go-crypto/openpgp"
@@ -428,7 +429,7 @@ func verifySign(s *packet.Signature, h hash.Hash, k *GPGKey) error {
 func ParseCommitWithSignature(c *git.Commit) *CommitVerification {
 	if c.Signature != nil && c.Committer != nil {
 		//Parsing signature
-		sig, err := extractSignature(c.Signature.Signature)
+		_, err := extractSignature(c.Signature.Signature)
 		if err != nil { //Skipping failed to extract sign
 			log.Error("SignatureRead err: %v", err)
 			return &CommitVerification{
@@ -474,42 +475,33 @@ func ParseCommitWithSignature(c *git.Commit) *CommitVerification {
 				continue //Skip this key
 			}
 
-			//Generating hash of commit
-			hash, err := populateHash(sig.Hash, []byte(c.Signature.Payload))
-			if err != nil { //Skipping ailed to generate hash
-				log.Error("PopulateHash: %v", err)
-				return &CommitVerification{
-					Verified: false,
-					Reason:   "gpg.error.generate_hash",
-				}
-			}
-			//We get PK
-			if err := verifySign(sig, hash, k); err == nil {
-				return &CommitVerification{ //Everything is ok
-					Verified:    true,
-					Reason:      fmt.Sprintf("%s <%s> / %s", c.Committer.Name, c.Committer.Email, k.KeyID),
-					SigningUser: committer,
-					SigningKey:  k,
-				}
-			}
-			//And test also SubsKey
-			for _, sk := range k.SubsKey {
-
-				//Generating hash of commit
-				hash, err := populateHash(sig.Hash, []byte(c.Signature.Payload))
-				if err != nil { //Skipping ailed to generate hash
-					log.Error("PopulateHash: %v", err)
-					return &CommitVerification{
-						Verified: false,
-						Reason:   "gpg.error.generate_hash",
-					}
-				}
-				if err := verifySign(sig, hash, sk); err == nil {
+			impKey, err := GetGPGImportByKeyID(k.KeyID)
+			if err == nil && impKey != nil {
+				err = c.Signature.Verify(impKey.Content)
+				if err == nil {
 					return &CommitVerification{ //Everything is ok
 						Verified:    true,
-						Reason:      fmt.Sprintf("%s <%s> / %s", c.Committer.Name, c.Committer.Email, sk.KeyID),
+						Reason:      fmt.Sprintf("%s <%s> / %s", c.Committer.Name, c.Committer.Email, k.KeyID),
 						SigningUser: committer,
-						SigningKey:  sk,
+						SigningKey:  k,
+					}
+				}
+				if err != errors.ErrKeyIncorrect {
+					reason := "gpgverify_error"
+
+					if _, ok := err.(errors.SignatureError); ok {
+						reason = "invalid"
+					} else if _, ok := err.(errors.StructuralError); ok {
+						reason = "malformed_signature"
+					} else if _, ok := err.(errors.UnknownPacketTypeError); ok {
+						reason = "unknown_signature_type"
+					}
+
+					return &CommitVerification{ //Signature is invalid or other validation error
+						Verified:    false,
+						Reason:      reason,
+						SigningUser: committer,
+						SigningKey:  k,
 					}
 				}
 			}

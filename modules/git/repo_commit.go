@@ -8,7 +8,6 @@ package git
 import (
 	"bytes"
 	"container/list"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -49,30 +48,9 @@ func convertPGPSignatureForTag(t *object.Tag) *CommitGPGSignature {
 		return nil
 	}
 
-	var w strings.Builder
-	var err error
-
-	if _, err = fmt.Fprintf(&w,
-		"object %s\ntype %s\ntag %s\ntagger ",
-		t.Target.String(), t.TargetType.Bytes(), t.Name); err != nil {
-		return nil
-	}
-
-	if err = t.Tagger.Encode(&w); err != nil {
-		return nil
-	}
-
-	if _, err = fmt.Fprintf(&w, "\n\n"); err != nil {
-		return nil
-	}
-
-	if _, err = fmt.Fprintf(&w, t.Message); err != nil {
-		return nil
-	}
-
 	return &CommitGPGSignature{
 		Signature: t.PGPSignature,
-		Payload:   strings.TrimSpace(w.String()) + "\n",
+		gogitTag:  t,
 	}
 }
 

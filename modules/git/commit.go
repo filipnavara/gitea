@@ -32,53 +32,14 @@ type Commit struct {
 	submoduleCache *ObjectCache
 }
 
-// CommitGPGSignature represents a git commit signature part.
-type CommitGPGSignature struct {
-	Signature string
-	Payload   string //TODO check if can be reconstruct from the rest of commit information to not have duplicate data
-}
-
 func convertPGPSignature(c *object.Commit) *CommitGPGSignature {
 	if c.PGPSignature == "" {
 		return nil
 	}
 
-	var w strings.Builder
-	var err error
-
-	if _, err = fmt.Fprintf(&w, "tree %s\n", c.TreeHash.String()); err != nil {
-		return nil
-	}
-
-	for _, parent := range c.ParentHashes {
-		if _, err = fmt.Fprintf(&w, "parent %s\n", parent.String()); err != nil {
-			return nil
-		}
-	}
-
-	if _, err = fmt.Fprint(&w, "author "); err != nil {
-		return nil
-	}
-
-	if err = c.Author.Encode(&w); err != nil {
-		return nil
-	}
-
-	if _, err = fmt.Fprint(&w, "\ncommitter "); err != nil {
-		return nil
-	}
-
-	if err = c.Committer.Encode(&w); err != nil {
-		return nil
-	}
-
-	if _, err = fmt.Fprintf(&w, "\n\n%s", c.Message); err != nil {
-		return nil
-	}
-
 	return &CommitGPGSignature{
-		Signature: c.PGPSignature,
-		Payload:   w.String(),
+		Signature:   c.PGPSignature,
+		gogitCommit: c,
 	}
 }
 

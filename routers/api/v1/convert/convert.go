@@ -70,7 +70,7 @@ func ToCommit(repo *models.Repository, c *git.Commit) *api.PayloadCommit {
 	var signature, payload string
 	if c.Signature != nil {
 		signature = c.Signature.Signature
-		payload = c.Signature.Payload
+		payload = c.Signature.GetPayload()
 	}
 
 	return &api.PayloadCommit{
