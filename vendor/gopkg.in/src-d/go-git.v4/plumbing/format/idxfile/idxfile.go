@@ -178,21 +178,24 @@ func (idx *MemoryIndex) getCRC32(firstLevel, secondLevel int) (uint32, error) {
 
 // FindHash implements the Index interface.
 func (idx *MemoryIndex) FindHash(o int64) (plumbing.Hash, error) {
+	var hash plumbing.Hash
+	var ok bool
 
-	if !idx.offsetHashIsFull && idx.offsetHash != nil {
-		if hash, ok := idx.offsetHash[o]; ok {
+	if idx.offsetHash != nil {
+		if hash, ok = idx.offsetHash[o]; ok {
 			return hash, nil
 		}
 	}
 
 	// Lazily generate the reverse offset/hash map if required.
-	if idx.offsetHash == nil {
+	if !idx.offsetHashIsFull || idx.offsetHash == nil {
 		if err := idx.genOffsetHash(); err != nil {
 			return plumbing.ZeroHash, err
 		}
+
+		hash, ok = idx.offsetHash[o]
 	}
 
-	hash, ok := idx.offsetHash[o]
 	if !ok {
 		return plumbing.ZeroHash, plumbing.ErrObjectNotFound
 	}
