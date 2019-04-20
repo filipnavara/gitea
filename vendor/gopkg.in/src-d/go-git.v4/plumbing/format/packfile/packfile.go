@@ -219,8 +219,9 @@ func (p *Packfile) objectAtOffset(offset int64, hash plumbing.Hash) (plumbing.En
 		defer bufPool.Put(buf)
 
 		size = p.getDeltaObjectSize(buf)
-		if size < smallObjectThreshold {
+		if size <= smallObjectThreshold {
 			var obj = new(plumbing.MemoryObject)
+			obj.SetSize(size)
 			if h.Type == plumbing.REFDeltaObject {
 				err = p.fillREFDeltaObjectContentWithBuffer(obj, h.Reference, buf)
 			} else {
