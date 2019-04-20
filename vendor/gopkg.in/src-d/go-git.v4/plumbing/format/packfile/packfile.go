@@ -216,6 +216,7 @@ func (p *Packfile) objectAtOffset(offset int64, hash plumbing.Hash) (plumbing.En
 		if _, _, err := p.s.NextObject(buf); err != nil {
 			return nil, err
 		}
+		defer bufPool.Put(buf)
 
 		size = p.getDeltaObjectSize(buf)
 		if size < smallObjectThreshold {
@@ -323,6 +324,7 @@ func (p *Packfile) fillREFDeltaObjectContent(obj plumbing.EncodedObject, ref plu
 	if err != nil {
 		return err
 	}
+	defer bufPool.Put(buf)
 
 	return p.fillREFDeltaObjectContentWithBuffer(obj, ref, buf)
 }
@@ -341,7 +343,6 @@ func (p *Packfile) fillREFDeltaObjectContentWithBuffer(obj plumbing.EncodedObjec
 	obj.SetType(base.Type())
 	err = ApplyDelta(obj, base, buf.Bytes())
 	p.cachePut(obj)
-	bufPool.Put(buf)
 
 	return err
 }
@@ -353,6 +354,7 @@ func (p *Packfile) fillOFSDeltaObjectContent(obj plumbing.EncodedObject, offset 
 	if err != nil {
 		return err
 	}
+	defer bufPool.Put(buf)
 
 	return p.fillOFSDeltaObjectContentWithBuffer(obj, offset, buf)
 }
